@@ -5,6 +5,7 @@ pipeline {
 	tools {
         maven "maven3"
 
+
 */
     environment {
         registry="khelifa330/vproappdock"
