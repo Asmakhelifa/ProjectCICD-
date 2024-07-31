@@ -4,7 +4,7 @@ pipeline {
 /*
 	tools {
         maven "maven3"
-    }
+
 */
     environment {
         registry="khelifa330/vproappdock"
@@ -37,7 +37,7 @@ pipeline {
             }
         }
 
-        stage ('CODE ANALYSIS WITH CHECKSTYLE'){
+        stage ('CODE ANALYSIS WITH CHECKSTYLE') {
             steps {
                 sh 'mvn checkstyle:checkstyle'
             }
@@ -65,39 +65,42 @@ pipeline {
                    -Dsonar.jacoco.reportsPath=target/jacoco.exec \
                    -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml'''
                 }
-
-
                 timeout(time: 10, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
         }
+
         stage('Build App Image') {
             steps {
-              script {
-              dockerImage = docker.build registry +":V$BUILD_NUMBER"
-              }
+                script {
+                dockerImage = docker.build registry +":V$BUILD_NUMBER"
+                }
             }
         }
-        stage('Upload Image'){
-             steps{
-               script{
-                 docker.withRegistry('',registryCredential){
-                   dockerImage.push("V$BUILD_NUMBER")
-                   dockerImage.push('latest')
-                 }
-               }
+
+        stage('Upload Image') {
+             steps {
+                script {
+                   docker.withRegistry('',registryCredential){
+                      dockerImage.push("V$BUILD_NUMBER")
+                      dockerImage.push('latest')
+                   }
+                }
              }
         }
+
         stage('Remove Unused docker image'){
              steps{
                sh "docker rmi $registry:V$BUILD_NUMBER"
              }
         }
-        stage('kubernetes Deploy'){
-          agent{label'KOPS-ASMA'}
-            steps{
-              sh "helm upgrade --install --force vprofile-stack helm/vprofilecharts --set appimage=${registry}:V${BUILD_NUMBER} --namespace prod"
-            }
+
+        stage('kubernetes Deploy') {
+           agent {label'KOPS-ASMA'}
+               steps {
+                  sh "helm upgrade --install --force vprofile-stack helm/vprofilecharts --set appimage=${registry}:V${BUILD_NUMBER} --namespace prod"
+               }
         }
+    }
 }
